@@ -1,112 +1,200 @@
 /*
-	Read Only by HTML5 UP
-	html5up.net | @ajlkn
-	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
+	Indivisible by Pixelarity
+	pixelarity.com | hello@pixelarity.com
+	License: pixelarity.com/license
 */
 
 (function($) {
 
 	skel.breakpoints({
-		xlarge: '(max-width: 1680px)',
-		large: '(max-width: 1280px)',
-		medium: '(max-width: 1024px)',
-		small: '(max-width: 736px)',
-		xsmall: '(max-width: 480px)'
+		xlarge:	'(max-width: 1680px)',
+		large:	'(max-width: 1280px)',
+		medium:	'(max-width: 980px)',
+		small:	'(max-width: 736px)',
+		xsmall:	'(max-width: 480px)',
+		xxsmall: '(max-width: 360px)'
 	});
 
 	$(function() {
 
-		var $body = $('body'),
-			$header = $('#header'),
-			$nav = $('#nav'), $nav_a = $nav.find('a'),
-			$wrapper = $('#wrapper');
+		var	$window = $(window),
+			$document = $(document),
+			$body = $('body'),
+			$wrapper = $('#wrapper'),
+			$footer = $('#footer');
+
+		// Disable animations/transitions until the page has loaded.
+			$window.on('load', function() {
+				window.setTimeout(function() {
+					$body.removeClass('is-loading-0');
+
+					window.setTimeout(function() {
+						$body.removeClass('is-loading-1');
+					}, 1500);
+				}, 100);
+			});
 
 		// Fix: Placeholder polyfill.
 			$('form').placeholder();
 
-		// Prioritize "important" elements on medium.
-			skel.on('+medium -medium', function() {
-				$.prioritize(
-					'.important\\28 medium\\29',
-					skel.breakpoint('medium').active
-				);
-			});
+		// Panels.
+			var $wrapper = $('#wrapper'),
+				$panels = $wrapper.children('.panel'),
+				locked = true;
 
-		// Header.
-			var ids = [];
+			// Deactivate + hide all but the first panel.
+				$panels.not($panels.first())
+					.addClass('inactive')
+					.hide();
 
-			// Set up nav items.
-				$nav_a
-					.scrolly({ offset: 44 })
-					.on('click', function(event) {
+			// Fix images.
+				$panels.each(function() {
 
-						var $this = $(this),
-							href = $this.attr('href');
+					var	$this = $(this),
+						$image = $this.children('.image'),
+						$img = $image.find('img'),
+						position = $img.data('position');
 
-						// Not an internal link? Bail.
-							if (href.charAt(0) != '#')
-								return;
+					// Set background.
+						$image.css('background-image', 'url(' + $img.attr('src') + ')');
 
-						// Prevent default behavior.
-							event.preventDefault();
+					// Set position (if set).
+						if (position)
+							$image.css('background-position', position);
 
-						// Remove active class from all links and mark them as locked (so scrollzer leaves them alone).
-							$nav_a
-								.removeClass('active')
-								.addClass('scrollzer-locked');
+					// Hide original.
+						$img.hide();
 
-						// Set active class on this link.
-							$this.addClass('active');
+				});
 
-					})
-					.each(function() {
+			// Unlock after a delay.
+				window.setTimeout(function() {
+					locked = false;
+				}, 1250);
 
-						var $this = $(this),
-							href = $this.attr('href'),
-							id;
+			// Click event.
+				$('a[href^="#"]').on('click', function(event) {
 
-						// Not an internal link? Bail.
-							if (href.charAt(0) != '#')
-								return;
+					var $this = $(this),
+						id = $this.attr('href'),
+						$panel = $(id),
+						$ul = $this.parents('ul'),
+						delay = 0;
 
-						// Add to scrollzer ID list.
-							id = href.substring(1);
-							$this.attr('id', id + '-link');
-							ids.push(id);
+					// Prevent default.
+						event.preventDefault();
+						event.stopPropagation();
+
+					// Locked? Bail.
+						if (locked)
+							return;
+
+					// Lock.
+						locked = true;
+
+					// Activate link.
+						$this.addClass('active');
+
+						if ($ul.hasClass('spinX')
+						||	$ul.hasClass('spinY'))
+							delay = 250;
+
+					// Delay.
+						window.setTimeout(function() {
+
+							// Deactivate all panels.
+								$panels.addClass('inactive');
+
+							// Deactivate footer.
+								$footer.addClass('inactive');
+
+							// Delay.
+								window.setTimeout(function() {
+
+									// Hide all panels.
+										$panels.hide();
+
+									// Show target panel.
+										$panel.show();
+
+									// Reset scroll.
+										$document.scrollTop(0);
+
+									// Delay.
+										window.setTimeout(function() {
+
+											// Activate target panel.
+												$panel.removeClass('inactive');
+
+											// Deactivate link.
+												$this.removeClass('active');
+
+											// Unlock.
+												locked = false;
+
+											// IE: Refresh.
+												$window.triggerHandler('--refresh');
+
+											window.setTimeout(function() {
+
+												// Activate footer.
+													$footer.removeClass('inactive');
+
+											}, 250);
+
+										}, 100);
+
+								}, 350);
+
+						}, delay);
+
+				});
+
+		// IE: Fixes.
+			if (skel.vars.IEVersion < 12) {
+
+				// Layout fixes.
+					$window.on('--refresh', function() {
+
+						// Fix min-height/flexbox.
+							$wrapper.css('height', 'auto');
+
+							window.setTimeout(function() {
+
+								var h = $wrapper.height(),
+									wh = $window.height();
+
+								if (h < wh)
+									$wrapper.css('height', '100vh');
+
+							}, 0);
+
+						// Fix panel image/content heights (IE<10 only).
+							if (skel.vars.IEVersion < 10) {
+
+								var $panel = $('.panel').not('.inactive'),
+									$image = $panel.find('.image'),
+									$content = $panel.find('.content'),
+									ih = $image.height(),
+									ch = $content.height(),
+									x = Math.max(ih, ch);
+
+								$image.css('min-height', x + 'px');
+								$content.css('min-height', x + 'px');
+
+							}
 
 					});
 
-			// Initialize scrollzer.
-				$.scrollzer(ids, { pad: 300, lastHack: true });
-
-		// Off-Canvas Navigation.
-
-			// Title Bar.
-				$(
-					'<div id="titleBar">' +
-						'<a href="#header" class="toggle"></a>' +
-						'<span class="title">' + $('#logo').html() + '</span>' +
-					'</div>'
-				)
-					.appendTo($body);
-
-			// Header.
-				$('#header')
-					.panel({
-						delay: 500,
-						hideOnClick: true,
-						hideOnSwipe: true,
-						resetScroll: true,
-						resetForms: true,
-						side: 'right',
-						target: $body,
-						visibleClass: 'header-visible'
+					$window.on('load', function() {
+						$window.triggerHandler('--refresh');
 					});
 
-			// Fix: Remove navPanel transitions on WP<10 (poor/buggy performance).
-				if (skel.vars.os == 'wp' && skel.vars.osVersion < 10)
-					$('#titleBar, #header, #wrapper')
-						.css('transition', 'none');
+				// Remove spinX/spinY.
+					$('.spinX').removeClass('spinX');
+					$('.spinY').removeClass('spinY');
+
+			}
 
 	});
 
